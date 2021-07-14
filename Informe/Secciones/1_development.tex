@@ -1,0 +1,207 @@
+\subsection{Diseño del programa}
+
+El programa desarrollado en el presente informe tiene como función la ecualización de una señal entrante. A continuación se presenta el diagrama de flujo correspondiente al procesamiento:
+
+	\begin{figure}[h]
+		\centering
+			\includegraphics[width = 0.8 \textwidth]{flujo_senales}
+		\caption{Flujo de procesamiento de señales.}
+		\label{fig:flujo_senales}
+	\end{figure}
+
+	Como se ve en la Figura \ref{fig:flujo_senales}, a partir de una secuencia de números complejos entrantes, se los transforma (con vectorización previa), escala por el vector taps y luego anti-transforma saliendo como escalares.
+
+	En principio, se utiliza como base la estructura del Trabajo Práctico 0, dado que éste también recibe parámetros por línea de órdenes y realiza operaciones con números complejos provistos por el flujo de entrada. En otras palabras, el diseño principal del presente trabajo se encuentra en la función de procesamiento \texttt{proc()} que engloba las operaciones representadas en la Figura \ref{fig:flujo_senales}.
+
+	En primer lugar, suponiendo que se requiere poder utilizar el programa en tiempo real, se propone una iteración que procece de a bloques más pequeños la entrada, en vez de recibir la entrada completa y procesarla en su totalidad. Desde aquí se parte al primer bloque de procesamiento, que requiere almacenar la entrada en un vector de longitud dada por una variable de control. Para ello se hace uso de la biblioteca \texttt{<vector>}, la cual contiene una plantilla del tipo de dato vector. Dado que para el Trabajo Práctico 0 se tuvo que implementar la clase complejo, se reutilizó esa misma implementación en conjunto con el dato vector para modelar la entrada.
+
+	Para el cálculo de transformaciones y anti-transformaciones se propone el uso de una clase abstracta \texttt{ft}. La clase abstracta (que no puede ser instanciada) tiene como fin darle abstracción a la implementación mientras se protegen los métodos de cálculo utilizados. Operativamente, se encarga de seleccionar que método de cómputo o síntesis utilizar (mediante las funciones \emph{getter's}) para que, al llamar a la función \texttt{calc()}, realice el cálculo requerido. En consecuencia, la función \texttt{proc()} llama a \texttt{calc()} que sobrescribe el vector entrante con su transformación.
+
+	Entre transformaciones, se realiza el producto miembro a miembro entre coeficientes de transformación y ecualización (\texttt{taps}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% HASTA ACÁ HIZO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%		En primer lugar se definió el algoritmo mediante el cual se realizaría el procesamiento de señales. 
+
+%Se tuvo en cuenta el hecho de que, a partir del \textit{downsampling}, se desecha una cantidad importante de muestras. Específicamente, si se fijó un parámetro de decimación $N$, de cada $N$ muestras procesadas sólo una es finalmente utilizada. Por lo tanto sólo hace falta realizar los cálculos para las muestras que sabemos van a ``sobrevivir'' la decimación.
+
+%Para cada muestra $n$, el \textit{moving average} realiza un promedio de las $N$ últimas muestras recibidas, es decir sigue la ecuación:
+
+%	\begin{equation*}
+%		 y[n] = \frac1N \sum_{k = 0}^{N-1} x[n-k]. 
+%	\end{equation*}
+
+%De lo anterior se sigue que cada muestra a la salida $y[n_0]$ es sólo función de los $N$ últimos valores a la entrada $x[n_0], x[n_0 - 1], \dots,  x[n_0 - N + 1]$. Los demás bloques de procesamiento sólo dependen del valor actual de su entrada, por lo que finalmente en el programa sólo hace falta recordar las últimas $N$ muestras que se recibieron para realizar los cálculos. 
+
+%Con estas observaciones en mente, se optó por el siguiente algoritmo de implementación:
+
+%	\begin{algorithmic}[H] % algorithmic fue el que pude hacer andar, porque me dejaba 
+		       % redefinir las keywords. algorithm2e era mas lindo pero seteandolo
+                       % con spanish y onelanguage mezclaba español con italiano.
+		       % Si encontras uno que se vea mejor y en español es bienvenido.
+
+		%\caption{Algoritmo para el procesamiento de las muestras.}
+	
+%		\While{el \textit{stream} de datos no termine}
+%			\State $promedio := 0$
+%			\For{las N siguientes muestras}
+%				\State $promedio \gets promedio + x[n]$
+%			\EndFor
+%			\State $promedio \gets promedio / N$
+%			\Return $\sqrt{\mathbf{Re}\{promedio\}^2 + \mathbf{Im}\{promedio\}^2}$ 
+%		\EndWhile
+%	\end{algorithmic}
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Implementación}
+ De acuerdo a lo requerido, la implementación de la herramienta se realizó en C++, para entradas y salidas de texto en los formatos especificados. Para ello se aprovecharon las clases \texttt{cmdline} y \texttt{complex} provistas en el curso, para el manejo de argumentos y números complejos respectivamente.
+
+ Con respecto al manejo de argumentos, para utilizar la clase \texttt{cmdline} hace falta definir la tabla de opciones que se esperan recibir, de tipo \texttt{option\_t}. Se optó por definirla dentro del \texttt{main} del programa, con las siguientes opciones:
+
+%	\lstinputlisting[firstline=48, lastline=54]{main.cc}
+
+\lstset{language=C++}
+\begin{lstlisting}[frame=single]
+static option_t options[] = {
+	{1, "i", "input", "-", opt_input, OPT_DEFAULT},
+	{1, "o", "output", "-", opt_output, OPT_DEFAULT},
+	{1, "N", "n_decimator","500",opt_n_decimator, OPT_DEFAULT},
+	{0, "h", "help", NULL, opt_help, OPT_DEFAULT},
+	{0, },
+};
+\end{lstlisting}
+
+Como es requerido, se definió a la cadena ``-'' (tercera columna de la tabla de opciones) como el valor por defecto para las opciones de entrada y de salida. De esta manera, ya sea que se haya omitido esa opción o se la especifique explicítamente para que asuma su valor por defecto, en ambos casos se  obtendrá el mismo resultado.
+
+Además la clase \texttt{cmdline} pide especificar las funciones que se utilizarán para \emph{parsear} cada opción (5ta columna de la tabla) - se las definió en el mismo \texttt{main}. Para las funciones que parsean las opciones de entrada, salida y ayuda se aprovecharon las que ya estaban implementadas en el archivo \texttt{main.cc} provisto con la implementación de la clase \texttt{cmdline} del curso. Quedó por definir, entonces, el \texttt{parser} para el parámetro $N$ de decimación:
+
+
+\lstset{language=C++} 
+\begin{lstlisting}[frame=single]
+static void
+opt_n_decimator(string const &arg)
+{
+	istringstream iss(arg);
+
+	// Intentamos extraer el N de la linea de comandos.
+	// Para detectar argumentos que unicamente consistan de
+	// numeros enteros, vamos a verificar que EOF llegue justo
+	// despues de la lectura exitosa del escalar
+	
+	if(!(iss >> n_decimator) || !iss.eof()) {
+		cerr << "non-integer factor: "
+		     << arg
+		     << "."
+		     << endl;
+		exit(1);
+	}
+
+	if (iss.bad()) {
+		cerr << "cannot read integer factor."
+		     << endl;
+		exit(1);
+	}
+}
+\end{lstlisting}
+
+Como el método \texttt{parse} de \texttt{cmdline} ya le pasa al \texttt{parser} su valor por defecto si fue omitido, siempre esta función recibirá un argumento para $N$ (no necesariamente válido). Se intenta leer el mismo como un entero, y de fallar se anuncia el error y se termina el programa. 
+
+Los argumentos se leen mediante \texttt{cmdline.parse($\cdot$)} a cada una de las variables estáticas definidas fuera del \texttt{main}:
+
+ 
+\lstset{language=C++}
+\begin{lstlisting}[frame=single]
+static size_t n_decimator;	// Decimator Factor (factor positivo de decimacion)
+static istream *iss = 0;	// Input Stream (clase para manejo de los flujos de entrada)
+static ostream *oss = 0;	// Output Stream (clase para manejo de los flujos de salida)
+static fstream ifs; 		// Input File Stream (derivada de la clase ifstream que deriva de istream para el manejo de archivos)
+static fstream ofs;		// Output File Stream (derivada de la clase ofstream que deriva de ostream para el manejo de archivos)
+\end{lstlisting}
+
+Estas son las variables que se le pasan a \texttt{am\_proc} que es la encargada de implementar el algoritmo de la sección anterior, de manera que el \texttt{main} queda:
+
+
+\lstset{language=C++}
+\begin{lstlisting}[frame=single]
+int
+main(int argc, char * const argv[])
+{
+	cmdline cmdl(options);	// Objeto con parametro tipo option_t (struct) declarado globalmente.
+	cmdl.parse(argc, argv);	// Metodo de parseo de la clase cmdline
+	am_proc(iss, oss, n_decimator);	// Procesamiento AM
+}
+\end{lstlisting}
+
+La función \texttt{am\_proc} está declarada en ``\texttt{am\_proc.h}'' y definida en ``\texttt{am\_proc.cc}''. Fuera de comprobar si hubo errores de lectura, su implementación es en escencia el pseudo-código de la sección anterior:
+
+\lstset{language=C++}
+\begin{lstlisting}[frame=single]
+void am_proc(istream *is, ostream *os, const size_t& n_decimator){
+	
+	bool eof_flag=false;
+	size_t i;
+	complejo c, aux; // c tendra la suma y aux sera el que recibe el complejo del stream	
+
+
+	// Si entra un archivo vacio (primero lee EOF), corta el for y luego el while, devolviendo un vacio
+
+	while(!eof_flag){
+		
+		// Se suman los primeros 'n_decimator' numeros hasta que corte 
+		for(i=1; i<=n_decimator && ((*is)>>aux); i++)
+			c += aux;
+	
+		// Compruebo si se llego a EOF
+		if(is->eof())
+			eof_flag=true;
+
+		if(is->bad()){ 
+		// El for termino por no poder guardar el caracter en x
+			cerr	<< "Error: Cannot read complex on input stream"
+				<< endl;
+			exit(1);
+		}		
+
+		// Realizo el proemdio movil
+		c=c / n_decimator;
+			
+		// Imprimo el valor absoluto
+		*os << c.abs()<<endl;
+	}
+	
+	if(os->bad()){
+		cerr	<< "Error: Cannot write output file"
+			<< endl;
+		exit(1);
+	}
+
+}
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Análisis de complejidad}
+
+	En la presente sección se realiza el análisis de complejidad espacial y temporal de los algoritmos de transformación por definición (DFT/iDFT) y optimizada (FFT/iFFT).
+
+	Para el análisis de complejidad temporal, se supone que la entrada tiene una longitud \emph{N}. En el caso del algoritmo de DFT/iDFT, se requiere recorrer la entrada en su totalidad (y realizar operaciones matemáticas de coste temporal asintótico \emph{O(1)}) para obtener un coeficiente de Fourier. Por lo tanto, el costo temporal de obtener un único coeficiente es \emph{O(N)}. En consecuencia, dado que la salida tendrá la misma longitud que la entrada, se deberán calcular \emph{N} coeficientes implicando $N \times N$ operaciones, resultando en una complejidad asintótica temporal $O(N^{2})$.\\
+	En cuanto al análisis espacial, se deben considerar dos conjuntos de variables: las requeridas para el cálculo, y las resultantes del mismo. Suponiendo que el peor caso será aquel cuya entrada de tamaño \emph{N} sea muy grande, la salida resultante también tendrá tamaño \emph{N}($O(N)$) y será grande. Las variables de cálculo, sin embargo, ante cualquier valor \emph{N} entrante, se mantendrá siempre constante. Asintóticamente se puede decir que este conjunto de variables es de coste $O(1)$. Por medio de la regla de la suma\footnote{$f_1 \in O(g) \cap f_2 \in O(h) \implies f_1 + f_2 \in O(\max(g,h))$} se infiere que la complejidad espacial será $O(N)$.\\
+	Como la iDFT difiere en dos operaciones matemáticas de la DFT (se conjuga el $W_N$ y se divide a la salida por la longitud), se aplica el mismo razonamiento obteniendo los mismos resultados.
+
+	Al inspeccionar el algoritmo FFT, se observa la técnica recursiva de \emph{Dividir y Conquistar} al desglosar el problema en 2 sub-problemas (llamada recursiva), cada uno con la mitad de tamaño $\left(\frac{N}{2}\right)$. Luego la resolución de cada problema realiza operaciones de orden lineal recorriendo el vector proporcional al largo inicial $N$. Suponiendo que requiere un tiempo $T(N)$ de cómputo para una entrada de longitud $N$, la ecuación en recurrencia queda determinada como:
+
+		\begin{equation*}
+			T(N) = 2 \cdot T\left(\frac{N}{2}\right) + O(N)
+		\end{equation*}
+	Dado que la ecuación sigue la forma:
+
+		\begin{equation*}
+			T(N) = a \cdot T\left(\frac{N}{b}\right) + f(N)
+		\end{equation*}
+	y se cumple que $a=2\geq1$ y $b=2\geq1$, se puede aplicar el teorema maestro concluyendo que, como $a=b^1$, $T(N)\in \Theta(N^1 \cdot \log(N))$. Por lo tanto, la complejidad temporal asintótica es $\Theta(N\cdot \log(N))$.
+	Si se analiza el coste espacial, se debe considerar que, al hacer la llamada recursiva, se generan dos vectores de tamaño $\frac{N}{2}$. En otras palabras, se requiere de memoria de tamaño $N$. La recursión seguirá hasta el punto de pedir memoria de tamaño 1, pero N veces. En consecuencia, se requiere \emph{N} veces de bloques de tamaño \emph{N} de memoria. Por lo tanto, el coste espacial es asintóticamente $O(N^2)$.
+	Al igual que con la DFT y la iDFT, existe la dualidad de la FFT con la iFFT, validando el desarrollo previo para la anti-transformada.	

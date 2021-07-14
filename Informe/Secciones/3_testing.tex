@@ -1,0 +1,14 @@
+
+Para realizar las corridas de prueba del trabajo, se implementó una serie de scripts que se ejecutan en conjunto bajo el comando \texttt{make test} \footnote{Dicho comando llama en primer instancia al target \texttt{tp1.exe}, en caso de que no se haya compilado el programa previamente}. A continuación se describen cada uno de ellos:
+
+	\begin{itemize}
+		\item \textbf{Test 1}. Comprueba si ante una entrada vacía, se genera una salida vacia.
+		\item \textbf{Test 2}. Si la entrada tiene menos de $n$ elementos, donde $n$ es la longitud del vector de muestras, debe completarse con ceros. Paraprobar esto, suponiendo que las operaciones de transformación y anti-transformación son correctas, con una entrada de las condiciones expresadas anteriormente la salida debe ser igual con la excepción de los valores nulos restantes.
+		\item \textbf{Test 3}. Se prueba si el programa tiene la capacidad de procesar números reales a la entrada.
+		\item \textbf{Test 4}. Idem pero ante entradas del tipo complejas.
+		\item \textbf{Test 5}. Este \emph{test} se encarga de verificar si los cálculos de transformadas y anti-transformadas son correctos. Ésto se comprueba comparando la similitud entre la entrada y la salida.
+		\item \textbf{Test 6}. Valida si la implementación de la ecualización es correcta.
+	\end{itemize}
+
+Cabe destacar el hecho de que no se comprueba el funcionamiento de la interpretación de la línea de comandos dado que esa validación tuvo lugar en el trabajo práctico pasado.
+
